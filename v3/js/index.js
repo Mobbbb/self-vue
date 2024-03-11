@@ -1,10 +1,13 @@
 function SelfVue (options) {
-    var self = this;
     this.data = options.data;
     this.methods = options.methods;
 
-    Object.keys(this.data).forEach(function(key) {
-        self.proxyKeys(key);
+    Object.keys(this.data).forEach(key => {
+        this.proxyKeys(key);
+    });
+
+    Object.keys(this.methods).forEach(key => {
+        this.proxyMethods(key);
     });
 
     observe(this.data);
@@ -15,6 +18,8 @@ function SelfVue (options) {
 SelfVue.prototype = {
     proxyKeys: function (key) {
         var self = this;
+
+        // 将this.data[key] 代理至 this[key]
         Object.defineProperty(this, key, {
             enumerable: false,
             configurable: true,
@@ -25,5 +30,15 @@ SelfVue.prototype = {
                 self.data[key] = newVal;
             }
         });
-    }
+    },
+    proxyMethods: function (key) {
+        var self = this;
+        Object.defineProperty(this, key, {
+            enumerable: false,
+            configurable: true,
+            get: function getter () {
+                return self.methods[key];
+            },
+        });
+    },
 }

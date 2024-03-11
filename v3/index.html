@@ -6,15 +6,33 @@
 </head>
 <style>
     #app {
-        text-align: center;
+        margin: 0 auto;
+        width: 400px;
+    }
+    .wrap {
+        box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 4px;
     }
 </style>
 <body>
     <div id="app">
-        <h2>{{title}}</h2>
-        <input v-model="name">
-        <h1>{{name}}</h1>
-        <button v-on:click="clickMe">click me!</button>
+        <div class="wrap">
+            <h1>TEXT - MODEL</h1>
+            <p>{{name}}</p>
+            <input v-model="name">
+        </div>
+        <div class="wrap">
+            <h1>OBJECT - MODEL</h1>
+            <p>Name: 《{{book.name}}》</p>
+            <p>Date: {{book.date}}</p>
+            <input v-model="book.name">
+        </div>
+        <div class="wrap">
+            <h1>CLICK - METHOD</h1>
+            <button v-on:click="change">Update Date</button>
+        </div>
     </div>
 </body>
 <script src="js/observer.js"></script>
@@ -22,24 +40,28 @@
 <script src="js/compile.js"></script>
 <script src="js/index.js"></script>
 <script type="text/javascript">
-
-     new SelfVue({
+    let vue = new SelfVue({
         el: '#app',
         data: {
-            title: 'hello world',
-            name: 'canfoo'
+            name: 'text',
+            book: {
+                name: 'The Little Prince',
+                date: '2022-01-05 00:00:00',
+            },
         },
         methods: {
-            clickMe: function () {
-                this.title = 'hello world';
-            }
+            change: function () {
+                this.book.date = new Date(+new Date() + 28800000).toISOString().split('.')[0].replace('T', ' ');
+            },
+            fetchData() {
+                setTimeout(() => {
+                    this.name = 'hello world'
+                }, 2000)
+            },
         },
         mounted: function () {
-            window.setTimeout(() => {
-                this.title = '你好';
-            }, 1000);
-        }
+            this.fetchData()
+        },
     });
-
 </script>
 </html>

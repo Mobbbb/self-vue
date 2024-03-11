@@ -35,7 +35,7 @@ Compile.prototype = {
             if (self.isElementNode(node)) {  
                 self.compile(node);
             } else if (self.isTextNode(node) && reg.test(text)) {
-                self.compileText(node, reg.exec(text)[1]);
+                self.compileText(node, reg.exec(text)[1], text.split(reg.exec(text)[0]));
             }
 
             if (node.childNodes && node.childNodes.length) {
@@ -56,16 +56,19 @@ Compile.prototype = {
                 } else {  // v-model 指令
                     self.compileModel(node, self.vm, exp, dir);
                 }
+                // TODO 其他指令
                 node.removeAttribute(attrName);
             }
         });
     },
-    compileText: function(node, exp) {
+    compileText: function(node, exp, appendArr) {
         var self = this;
-        var initText = this.vm[exp];
-        this.updateText(node, initText);
-        new Watcher(this.vm, exp, function (value) {
-            self.updateText(node, value);
+        var initText = this.getVmExp(exp);
+        this.textNodeUpdater(node, initText, appendArr);
+        new Watcher(this.vm, function () {
+            return self.getVmExp(exp)
+        }, function (value) {
+            self.textNodeUpdater(node, value, appendArr);
         });
     },
     compileEvent: function (node, vm, exp, dir) {
@@ -78,10 +81,12 @@ Compile.prototype = {
     },
     compileModel: function (node, vm, exp, dir) {
         var self = this;
-        var val = this.vm[exp];
-        this.modelUpdater(node, val);
-        new Watcher(this.vm, exp, function (value) {
-            self.modelUpdater(node, value);
+        var val = this.getVmExp(exp);
+        this.modelNodeUpdater(node, val);
+        new Watcher(this.vm, function () {
+            return self.getVmExp(exp)
+        }, function (value) {
+            self.modelNodeUpdater(node, value);
         });
 
         node.addEventListener('input', function(e) {
@@ -89,14 +94,47 @@ Compile.prototype = {
             if (val === newValue) {
                 return;
             }
-            self.vm[exp] = newValue;
+            self.setVmExp(exp, newValue)
             val = newValue;
         });
     },
-    updateText: function (node, value) {
-        node.textContent = typeof value == 'undefined' ? '' : value;
+    setVmExp(exp, val) {
+        if (exp.indexOf('.') > -1) {
+            const expArr = exp.split('.')
+            this.setVmValue(this.vm, expArr, val, expArr.length - 1)
+        } else {
+            this.vm[exp] = val
+        }
     },
-    modelUpdater: function(node, value, oldValue) {
+    getVmExp(exp) {
+        if (exp.indexOf('.') > -1) {
+            const expArr = exp.split('.')
+            return this.getVmValue(this.vm, expArr, expArr.length - 1)
+        } else {
+            return this.vm[exp]
+        }
+    },
+    setVmValue(obj, expArr, val, length, index = 0) {
+        if (index === length) {
+            obj[expArr[index]] = val
+        } else {
+            const next = index + 1
+            this.setVmValue(obj[expArr[index]], expArr, val, length, next)
+        }
+    },
+    getVmValue(obj, expArr, length, index = 0) {
+        if (index === length) {
+            return obj[expArr[index]]
+        } else {
+            const next = index + 1
+            return this.getVmValue(obj[expArr[index]], expArr, length, next)
+        }
+    },
+    textNodeUpdater: function (node, value, appendArr) {
+        let formatValue  = typeof value == 'undefined' ? '' : value;
+        node.textContent = appendArr[0] + formatValue + appendArr[1]
+    },
+    modelNodeUpdater: function(node, value, oldValue) {
         node.value = typeof value == 'undefined' ? '' : value;
     },
     isDirective: function(attr) {
